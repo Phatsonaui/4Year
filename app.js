@@ -42,10 +42,11 @@
   }, { rootMargin: '400px 0px' });
   function loadPh(ph) {
     const img = ph.querySelector('img');
-    media(ph.dataset.id).then((url) => {
-      img.onload = () => { img.classList.add('in'); ph.classList.add('done'); };
+    ph.classList.add('loading');
+    return media(ph.dataset.id).then((url) => {
       img.src = url;
-    }).catch(() => { ph.classList.add('done'); });
+      return img.decode().catch(() => {});
+    }).then(() => { img.classList.add('in'); ph.classList.add('done'); }).catch(() => { ph.classList.add('done'); });
   }
   function photo(n, { thumb = true, ratio = false } = {}) {
     const ph = el('div', 'ph');
@@ -128,6 +129,19 @@
   });
 
   /* ================= start ================= */
+  // ?debug shows a small FPS meter, to check smoothness on the real iPad
+  function fpsMeter() {
+    const box = el('div', 'fps'); document.body.append(box);
+    let n = 0, worst = 0, last = performance.now(), t0 = last;
+    const tick = (t) => {
+      n++; worst = Math.max(worst, t - last); last = t;
+      if (t - t0 > 1000) { box.textContent = `${Math.round(n * 1000 / (t - t0))} fps · ช้าสุด ${Math.round(worst)}ms`; n = 0; worst = 0; t0 = t; }
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }
+  if (/[?&]debug\b/.test(location.search)) fpsMeter();
+
   function start() {
     $('#lock').remove();
     $('#app').hidden = false; $('#fab').hidden = false;
@@ -172,7 +186,7 @@
   }
   function reveal(i) {
     const s = $('#' + CHAPS[i]); s.hidden = false;
-    if (CHAPS[i] === 'letter') music().prepare();
+    if (CHAPS[i] === 'letter') { music().prepare(); letterPrep(); }
   }
   function goNext(i) {
     if (i + 1 > prog) { prog = i + 1; store.set('prog', prog); }
@@ -191,7 +205,7 @@
     prog = Math.min(store.get('prog', 0), CHAPS.length - 1); allDone = store.get('done', false);
     CHAPS.forEach((id, i) => {
       const s = $('#' + id);
-      if (i > prog && !allDone) s.hidden = true; else if (id === 'letter') music().prepare();
+      if (i > prog && !allDone) s.hidden = true; else if (id === 'letter') { music().prepare(); letterPrep(); }
       if (id === 'finale') return;
       const w = el('div', 'next');
       w.innerHTML = `<button class="btn btn-big next-btn">${i === 0 ? 'เริ่มบทที่ 1 →' : `ไปบทที่ ${i + 1} →`}</button><p class="next-note" role="status"></p>`;
@@ -442,40 +456,59 @@
       document.body.append(h); setTimeout(() => h.remove(), 1500);
     }
   }
+  let letterPrep = () => {};
   function buildLetter() {
     const env = $('#envelope'), body = $('#letterBody'), L = C.letter;
     const texts = [`${L.to},`, ...L.paras, L.sign];
     body.innerHTML = texts.map((_, i) => `<p class="${i === 0 ? 'to' : i === texts.length - 2 ? 'last' : i === texts.length - 1 ? 'sign' : ''}"></p>`).join('')
       + (L.ps ? `<button class="ps" type="button"><span class="ps-out">📝 มีโน้ตแปะไว้ แตะเพื่อเปิด</span><span class="ps-in"><svg class="ps-bouquet" viewBox="0 0 120 160" aria-hidden="true"><use href="#bouquet"/></svg>${esc(L.ps)}</span></button>` : '')
       + '<p class="letter-skip">แตะที่จดหมายเพื่ออ่านเร็วขึ้น</p>';
-    const ps = body.querySelector('.ps'); if (ps) { ps.hidden = true; ps.onclick = (e) => { e.stopPropagation(); ps.classList.add('open'); heartBurst(ps, 18); }; }
-    if (L.photo) {
-      const lp = $('#letterPhoto'), fig = el('figure'); fig.style.margin = 0;
-      fig.append(photo(L.photo, { thumb: false }), el('figcaption', '', esc(L.photoCaption || '')));
-      lp.append(fig); lp.onclick = () => openLightbox([L.photo], 0);
-    }
+    const ps = body.querySelector('.ps'); if (ps) { ps.hidden = true; ps.onclick = (e) => { e.stopPropagation(); ps.classList.add('open'); heartBurst(ps, 12); }; }
+
+    // every paragraph holds its full text from the start: a visible part and an invisible rest,
+    // so the letter already has its final size and typing never moves anything else on the page
     const seg = window.Intl?.Segmenter ? new Intl.Segmenter('th', { granularity: 'grapheme' }) : null;
     const split = (t) => (seg ? [...seg.segment(t)].map((x) => x.segment) : [...t]);
+    const paras = [...body.querySelectorAll('p:not(.letter-skip)')].map((p, i) => {
+      const shown = el('span', 'shown'), rest = el('span', 'rest');
+      shown.append(document.createTextNode('')); rest.append(document.createTextNode(texts[i]));
+      p.append(shown, rest);
+      return { p, chars: split(texts[i]), shown: shown.firstChild, rest: rest.firstChild };
+    });
+
+    let photoReady = Promise.resolve();
+    if (L.photo) {
+      const lp = $('#letterPhoto'), fig = el('figure'); fig.style.margin = 0;
+      const ph = photo(L.photo, { thumb: false });
+      io.unobserve(ph); // loaded by letterPrep instead, before she reaches the letter
+      fig.append(ph, el('figcaption', '', esc(L.photoCaption || '')));
+      lp.append(fig); lp.onclick = () => openLightbox([L.photo], 0);
+      let started = null;
+      letterPrep = () => (started ||= loadPh(ph));
+      photoReady = { then: (f) => letterPrep().then(f) };
+    }
+
     let fast = false, typing = false;
     body.addEventListener('click', () => { if (typing) fast = true; });
+    const wait = (ms) => new Promise((r) => setTimeout(r, ms));
     const typeAll = async () => {
-      typing = true;
-      const ps_ = body.querySelectorAll('p:not(.letter-skip)');
-      for (let i = 0; i < texts.length; i++) {
-        const p = ps_[i], chars = split(texts[i]);
+      typing = true; document.body.classList.add('quiet');
+      for (let i = 0; i < paras.length; i++) {
+        const { p, chars, shown, rest } = paras[i];
         p.classList.add('in', 'typing');
-        if (fast) { p.textContent = texts[i]; } else {
-          for (let k = 0; k < chars.length; k++) {
-            if (fast) { p.textContent = texts[i]; break; }
-            p.textContent += chars[k];
-            await new Promise((r) => setTimeout(r, /[ ,.!?]/.test(chars[k]) ? 70 : 28));
-          }
+        let k = 0;
+        while (k < chars.length && !fast) {
+          // 2 graphemes per step: half as many page updates, same reading speed
+          const step = chars.slice(k, k + 2).join(''); k += 2;
+          shown.data += step; rest.data = rest.data.slice(step.length);
+          await wait(/[ ,.!?]/.test(step) ? 110 : 52);
         }
+        shown.data = texts[i]; rest.data = '';
         p.classList.remove('typing');
-        if (i === texts.length - 2) heartBurst(p, 20);
-        if (!fast) await new Promise((r) => setTimeout(r, 350));
+        if (i === paras.length - 2) heartBurst(p, 12);
+        if (!fast) await wait(350);
       }
-      typing = false;
+      typing = false; document.body.classList.remove('quiet');
       body.querySelector('.letter-skip').remove();
       if (ps) ps.hidden = false;
       ready('letter');
@@ -483,14 +516,16 @@
     const open = () => {
       if (env.classList.contains('open')) return;
       env.classList.add('open');
-      heartBurst(env);
-      music().play();
-      setTimeout(() => {
+      music().play(); // must run inside the tap so iPad allows sound
+      // effects one after another instead of all in the same moment
+      setTimeout(() => heartBurst(env, 14), 250);
+      setTimeout(async () => {
+        await photoReady; // normally already decoded by letterPrep
         if (L.photo) $('#letterPhoto').hidden = false;
         body.hidden = false;
         ($('#letterPhoto').hidden ? body : $('#letterPhoto')).scrollIntoView({ behavior: 'smooth', block: 'start' });
-        setTimeout(typeAll, 900);
-      }, 1300);
+        setTimeout(typeAll, 1300);
+      }, 1400);
     };
     env.addEventListener('click', open);
     env.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } });
