@@ -561,9 +561,28 @@
   /* ================= photo booth (3 shots -> strip -> IG story) ================= */
   // photos never leave the device: they are drawn on canvases and kept in this browser's localStorage only
   const booth = {};
+  // turn the cat <symbol>s from the page into images we can draw on canvases
+  const catImgs = {};
+  booth.cat = (id) => {
+    if (!catImgs[id]) {
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 100" width="360" height="300">${document.getElementById(id).innerHTML}</svg>`;
+      const im = new Image(); im.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+      catImgs[id] = im.decode().then(() => im).catch(() => null);
+    }
+    return catImgs[id];
+  };
+  const sticker = (x, t, px, py, rot, size = 64) => {
+    x.save(); x.translate(px, py); x.rotate(rot); x.font = `${size}px sans-serif`; x.textAlign = 'center'; x.textBaseline = 'middle';
+    x.fillText(t, 0, 0); x.restore();
+  };
   function buildBooth() {
     const vidEl = $('#boothVid'), note = $('#boothNote');
-    const FR = { pink: ['#ff9ec2', '#fff'], sky: ['#8fd0f7', '#fff'], cream: ['#fff6ea', '#f06a9b'] };
+    // [frame colour, text colour, stickers on photo corners]
+    const FR = {
+      pink: ['#ff9ec2', '#fff', ['💗', '✨', '🌸']],
+      sky: ['#8fd0f7', '#fff', ['☁️', '⭐', '💙']],
+      cream: ['#fff6ea', '#f06a9b', ['🎀', '🍓', '🌼']],
+    };
     const POSES = ['ช็อต 1 · ยิ้มหวานๆ 😊', 'ช็อต 2 · ทำหน้าตลก 🤪', 'ช็อต 3 · หอมแก้มเลย 😘'];
     let frame = 'pink', shots = [], stream = null, busy = false;
     const show = (id, on) => { $(id).hidden = !on; };
@@ -582,23 +601,47 @@
       return c;
     };
 
+    // draws the strip; slots without a photo yet become numbered placeholders (used for the frame preview)
     async function makeStrip() {
-      await fontsReady();
-      const [bg, ink] = FR[frame];
+      const [, sky, cloudy] = await Promise.all([fontsReady(), booth.cat('cat-fluffy'), booth.cat('cat-fold')]);
+      const [bg, ink, stick] = FR[frame];
       const c = el('canvas'); c.width = 600; c.height = 1560;
       const x = c.getContext('2d');
       x.fillStyle = bg; x.fillRect(0, 0, 600, 1560);
-      shots.forEach((s, i) => { x.drawImage(s, 40, 40 + i * 410, 520, 390); });
-      x.fillStyle = ink; x.textAlign = 'center';
-      x.font = '76px Sriracha, cursive'; x.fillText('4 years of us', 300, 1372);
-      x.font = '600 34px Mali, sans-serif'; x.fillText('27.11.2565 — 27.11.2569', 300, 1432);
-      x.font = '34px sans-serif'; x.fillText('♡  เธอ & เค้า  ♡', 300, 1500);
+      for (let i = 0; i < 3; i++) {
+        const y = 40 + i * 410;
+        if (shots[i]) { x.drawImage(shots[i], 40, y, 520, 390); continue; }
+        x.fillStyle = 'rgba(255,255,255,.6)'; x.fillRect(40, y, 520, 390);
+        x.fillStyle = frame === 'cream' ? '#f3c2d4' : bg; x.textAlign = 'center';
+        x.font = '90px sans-serif'; x.fillText('📷', 300, y + 200);
+        x.font = '600 36px Mali, sans-serif'; x.fillText(POSES[i].split(' · ')[1], 300, y + 280);
+      }
+      // corner stickers, like the ones you add in a real booth
+      sticker(x, stick[0], 528, 70, 0.25);
+      sticker(x, stick[1], 72, 480, -0.2);
+      sticker(x, stick[2], 528, 890, 0.2);
+      sticker(x, '💕', 300, 1262, 0, 40);
+      // Sky & Cloudy peeking over the bottom corners of the last photo
+      if (sky) x.drawImage(sky, 6, 1168, 156, 130);
+      if (cloudy) x.drawImage(cloudy, 438, 1168, 156, 130);
+      x.fillStyle = ink; x.textAlign = 'center'; x.textBaseline = 'alphabetic';
+      x.font = '76px Sriracha, cursive'; x.fillText('4 years of us', 300, 1380);
+      x.font = '600 32px Mali, sans-serif'; x.fillText('27.11.2565 — 27.11.2569', 300, 1436);
+      x.font = '600 28px Mali, sans-serif'; x.fillText('เธอ · เค้า · สกาย · คลาวดี้', 300, 1490);
+      sticker(x, '🐾', 70, 1500, -0.3, 40); sticker(x, '🐾', 530, 1500, 0.3, 40);
       return c.toDataURL('image/jpeg', 0.9);
+    }
+    // before shooting, show what the chosen frame will look like
+    async function preview() {
+      if (shots.length === 3) return;
+      const url = await makeStrip();
+      if (shots.length === 3) return;
+      $('#boothStripImg').src = url; $('#boothStrip').classList.add('preview');
     }
 
     async function finish() {
       const url = await makeStrip();
-      $('#boothStripImg').src = url;
+      $('#boothStripImg').src = url; $('#boothStrip').classList.remove('preview');
       store.set('booth', url);
       show('#boothRetake', true); show('#boothShoot', false); show('#boothOpen', false);
       note.textContent = 'น่ารักมาก! 💗 รูปนี้รอเธออยู่ตอนจบ เอาไปลงสตอรี่ได้เลย';
@@ -620,7 +663,7 @@
     }
     async function shoot() {
       if (busy || !stream) return; busy = true;
-      shots = []; $('#boothStripImg').removeAttribute('src');
+      shots = []; preview();
       show('#boothShoot', false); show('#boothRetake', false);
       const cnt = $('#boothCount'), pose = $('#boothPose');
       for (let i = 0; i < 3; i++) {
@@ -652,18 +695,18 @@
 
     $('#boothOpen').onclick = openCam;
     $('#boothShoot').onclick = shoot;
-    $('#boothRetake').onclick = () => { shots = []; openCam(); };
+    $('#boothRetake').onclick = () => { shots = []; preview(); openCam(); };
     $('#boothFile').onchange = (e) => { if (shots.length >= 3) shots = []; fromFiles(e.target.files); e.target.value = ''; };
     $('.booth-frames').addEventListener('click', async (e) => {
       const b = e.target.closest('[data-frame]'); if (!b) return;
       frame = b.dataset.frame;
       document.querySelectorAll('.booth-frames .chip').forEach((c) => c.classList.toggle('on', c === b));
-      if (shots.length === 3) await finish();
+      if (shots.length === 3) await finish(); else preview();
     });
     new IntersectionObserver((es) => { if (!es[0].isIntersecting && !busy) stopCam(); }).observe($('#booth'));
 
     const saved = store.get('booth', null);
-    if (saved) { $('#boothStripImg').src = saved; show('#boothRetake', true); show('#boothOpen', false); ready('booth'); }
+    if (saved) { $('#boothStripImg').src = saved; show('#boothRetake', true); show('#boothOpen', false); ready('booth'); } else preview();
   }
 
   // the 1080x1920 story image shown at the finale
@@ -678,7 +721,7 @@
     x.fillStyle = g; x.fillRect(0, 0, 1080, 1920);
     x.textAlign = 'center';
     // scattered hearts and sparkles at fixed spots so every render looks the same
-    const deco = [[90, 360, '💗'], [990, 300, '✨'], [120, 1150, '🌸'], [960, 980, '💗'], [80, 1700, '✨'], [1000, 1640, '🌸'], [170, 640, '☁️'], [930, 560, '🫧']];
+    const deco = [[90, 360, '💗'], [990, 300, '✨'], [120, 1150, '🌸'], [960, 980, '💗'],  [170, 640, '☁️'], [930, 560, '🫧']];
     x.font = '64px sans-serif'; deco.forEach(([dx, dy, t]) => x.fillText(t, dx, dy));
     x.fillStyle = '#f06a9b'; x.font = '96px Sriracha, cursive'; x.fillText('Happy 4th Anniversary', 540, 190);
     x.fillStyle = '#7d6b78'; x.font = '600 44px Mali, sans-serif'; x.fillText('สี่ปีของ เธอ กับ เค้า 💗', 540, 262);
@@ -687,6 +730,9 @@
     x.shadowColor = 'rgba(160,110,140,.35)'; x.shadowBlur = 40; x.shadowOffsetY = 18;
     x.drawImage(strip, -w / 2, -h / 2, w, h);
     x.restore();
+    const [sky, cloudy] = await Promise.all([booth.cat('cat-fluffy'), booth.cat('cat-fold')]);
+    if (sky) x.drawImage(sky, 40, 1690, 204, 170);
+    if (cloudy) x.drawImage(cloudy, 836, 1690, 204, 170);
     x.fillStyle = '#4a3b47'; x.font = '600 46px Mali, sans-serif'; x.fillText('27.11.2565 — 27.11.2569', 540, 1772);
     x.fillStyle = '#f06a9b'; x.font = '40px Sriracha, cursive'; x.fillText('สกาย & คลาวดี้ ก็รักนะ 🐾', 540, 1840);
     $('#boothStoryImg').src = c.toDataURL('image/jpeg', 0.92);
