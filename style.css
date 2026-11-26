@@ -416,3 +416,24 @@ body.night::after { content: ''; position: fixed; inset: 0; background: radial-g
 .booth-strip { position: relative; }
 .booth-strip.preview img { opacity: .92; animation: none; }
 .booth-strip.preview::after { content: 'ตัวอย่างกรอบ 👀'; position: absolute; left: 50%; top: -14px; transform: translateX(-50%) rotate(-2deg); background: #fff; color: var(--pink-deep); font-weight: 700; font-size: .85rem; padding: .2em .8em; border-radius: 999px; box-shadow: var(--shadow); white-space: nowrap; }
+
+/* ---------- little bouquet flowers (carnations + baby's breath) ---------- */
+.posy { display: block; pointer-events: none; overflow: visible; filter: drop-shadow(0 3px 4px rgba(160, 110, 140, .18)); }
+.chap { position: relative; }
+.chap-posy { position: absolute; top: -18px; width: 92px; }
+.chap-posy.l { left: max(0px, calc(50% - 300px)); transform: rotate(-14deg); }
+.chap-posy.r { right: max(0px, calc(50% - 300px)); transform: scaleX(-1) rotate(-14deg); }
+.lock-card { position: relative; }
+.lock-posy { position: absolute; width: 84px; right: -14px; bottom: -22px; transform: rotate(-12deg); }
+.hero-flowers { position: relative; }
+.hero-posy-l, .hero-posy-r { position: absolute; z-index: 2; width: 110px; bottom: -26px; }
+.hero-posy-l { left: max(-6px, calc(50% - 380px)); transform: rotate(-10deg); }
+.hero-posy-r { right: max(-6px, calc(50% - 380px)); transform: scaleX(-1) rotate(-10deg); }
+.ps-bouquet { display: block; width: 110px; margin: 0 auto 8px; animation: dropIn .8s ease-out; }
+@media (max-width: 760px) {
+  .chap-posy { width: 62px; top: -30px; }
+  .chap-posy.l { left: -4px; }
+  .chap-posy.r { right: -4px; }
+  .hero-posy-l, .hero-posy-r { width: 78px; bottom: -18px; }
+  .lock-posy { width: 66px; right: -8px; bottom: -18px; }
+}

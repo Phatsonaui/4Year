@@ -139,6 +139,9 @@
     petals(36);
     buildHero(); buildQuiz(); buildTimeline(); buildMap(); buildGallery();
     buildReasons(); buildCoupons(); buildBucket(); buildLetter(); buildVideos(); buildBooth(); buildFinale(); buildControls();
+    // a small posy (carnations + baby's breath, like the real bouquet) beside every chapter title, alternating sides
+    document.querySelectorAll('.chap').forEach((h, i) => h.insertAdjacentHTML('beforeend',
+      `<svg class="posy chap-posy ${i % 2 ? 'r' : 'l'}" viewBox="0 0 120 100" aria-hidden="true"><use href="#posy"/></svg>`));
     initChapters();
   }
 
@@ -443,7 +446,7 @@
     const env = $('#envelope'), body = $('#letterBody'), L = C.letter;
     const texts = [`${L.to},`, ...L.paras, L.sign];
     body.innerHTML = texts.map((_, i) => `<p class="${i === 0 ? 'to' : i === texts.length - 2 ? 'last' : i === texts.length - 1 ? 'sign' : ''}"></p>`).join('')
-      + (L.ps ? `<button class="ps" type="button"><span class="ps-out">📝 มีโน้ตแปะไว้ แตะเพื่อเปิด</span><span class="ps-in">${esc(L.ps)}</span></button>` : '')
+      + (L.ps ? `<button class="ps" type="button"><span class="ps-out">📝 มีโน้ตแปะไว้ แตะเพื่อเปิด</span><span class="ps-in"><svg class="ps-bouquet" viewBox="0 0 120 160" aria-hidden="true"><use href="#bouquet"/></svg>${esc(L.ps)}</span></button>` : '')
       + '<p class="letter-skip">แตะที่จดหมายเพื่ออ่านเร็วขึ้น</p>';
     const ps = body.querySelector('.ps'); if (ps) { ps.hidden = true; ps.onclick = (e) => { e.stopPropagation(); ps.classList.add('open'); heartBurst(ps, 18); }; }
     if (L.photo) {
