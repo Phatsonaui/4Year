@@ -138,12 +138,12 @@
     window.scrollTo(0, 0);
     petals(36);
     buildHero(); buildQuiz(); buildTimeline(); buildMap(); buildGallery();
-    buildReasons(); buildCoupons(); buildBucket(); buildLetter(); buildVideos(); buildFinale(); buildControls();
+    buildReasons(); buildCoupons(); buildBucket(); buildLetter(); buildVideos(); buildBooth(); buildFinale(); buildControls();
     initChapters();
   }
 
   /* ================= chapters (no skipping) ================= */
-  const CHAPS = ['hero', 'quiz', 'timeline', 'map', 'gallery', 'reasons', 'coupons', 'bucket', 'letter', 'videos', 'finale'];
+  const CHAPS = ['hero', 'quiz', 'timeline', 'map', 'gallery', 'reasons', 'coupons', 'bucket', 'letter', 'videos', 'booth', 'finale'];
   const WAIT = {
     quiz: 'ตอบให้ครบทุกข้อก่อน ถึงจะไปต่อได้ 🔒',
     timeline: 'อ่านให้ถึงเรื่องสุดท้ายก่อนน้า 🔒',
@@ -152,6 +152,7 @@
     reasons: 'พลิกการ์ดให้ครบทุกใบก่อนน้า 🔒',
     letter: 'เปิดอ่านจดหมายให้จบก่อนน้า 🔒',
     videos: 'ดูวิดีโอสักแป๊บก่อนน้า 🎬 🔒',
+    booth: 'ถ่ายให้ครบ 3 ช็อตก่อนน้า 📸 🔒',
   };
   let prog = 0, allDone = false;
   const readyNow = {};
@@ -557,6 +558,143 @@
     }, { threshold: 0.2 }).observe(wrap);
   }
 
+  /* ================= photo booth (3 shots -> strip -> IG story) ================= */
+  // photos never leave the device: they are drawn on canvases and kept in this browser's localStorage only
+  const booth = {};
+  function buildBooth() {
+    const vidEl = $('#boothVid'), note = $('#boothNote');
+    const FR = { pink: ['#ff9ec2', '#fff'], sky: ['#8fd0f7', '#fff'], cream: ['#fff6ea', '#f06a9b'] };
+    const POSES = ['ช็อต 1 · ยิ้มหวานๆ 😊', 'ช็อต 2 · ทำหน้าตลก 🤪', 'ช็อต 3 · หอมแก้มเลย 😘'];
+    let frame = 'pink', shots = [], stream = null, busy = false;
+    const show = (id, on) => { $(id).hidden = !on; };
+    const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+    const fontsReady = () => Promise.race([
+      Promise.all([document.fonts.load('76px Sriracha'), document.fonts.load('600 40px Mali')]).catch(() => {}), wait(1500)]);
+
+    // crop any source to a 4:3 canvas (mirrored for the selfie camera, like a real booth screen)
+    const grab = (src, w, h, mirror) => {
+      const c = el('canvas'); c.width = 1040; c.height = 780;
+      const x = c.getContext('2d');
+      let sw = w, sh = h;
+      if (w / h > 4 / 3) sw = h * 4 / 3; else sh = w * 3 / 4;
+      if (mirror) { x.translate(1040, 0); x.scale(-1, 1); }
+      x.drawImage(src, (w - sw) / 2, (h - sh) / 2, sw, sh, 0, 0, 1040, 780);
+      return c;
+    };
+
+    async function makeStrip() {
+      await fontsReady();
+      const [bg, ink] = FR[frame];
+      const c = el('canvas'); c.width = 600; c.height = 1560;
+      const x = c.getContext('2d');
+      x.fillStyle = bg; x.fillRect(0, 0, 600, 1560);
+      shots.forEach((s, i) => { x.drawImage(s, 40, 40 + i * 410, 520, 390); });
+      x.fillStyle = ink; x.textAlign = 'center';
+      x.font = '76px Sriracha, cursive'; x.fillText('4 years of us', 300, 1372);
+      x.font = '600 34px Mali, sans-serif'; x.fillText('27.11.2565 — 27.11.2569', 300, 1432);
+      x.font = '34px sans-serif'; x.fillText('♡  เธอ & เค้า  ♡', 300, 1500);
+      return c.toDataURL('image/jpeg', 0.9);
+    }
+
+    async function finish() {
+      const url = await makeStrip();
+      $('#boothStripImg').src = url;
+      store.set('booth', url);
+      show('#boothRetake', true); show('#boothShoot', false); show('#boothOpen', false);
+      note.textContent = 'น่ารักมาก! 💗 รูปนี้รอเธออยู่ตอนจบ เอาไปลงสตอรี่ได้เลย';
+      ready('booth');
+      booth.render(url);
+    }
+
+    function stopCam() { if (stream) stream.getTracks().forEach((t) => t.stop()); stream = null; vidEl.srcObject = null; }
+    async function openCam() {
+      note.textContent = '';
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 960 } }, audio: false });
+        vidEl.srcObject = stream; await vidEl.play().catch(() => {});
+        show('#boothPh', false); show('#boothOpen', false); show('#boothShoot', true); show('#boothFileBtn', false); show('#boothRetake', false);
+      } catch {
+        note.textContent = 'เปิดกล้องไม่ได้ 🥲 ลองกด "อนุญาต" ใช้กล้อง หรือเลือกรูปจากเครื่องแทนก็ได้นะ';
+        show('#boothFileBtn', true);
+      }
+    }
+    async function shoot() {
+      if (busy || !stream) return; busy = true;
+      shots = []; $('#boothStripImg').removeAttribute('src');
+      show('#boothShoot', false); show('#boothRetake', false);
+      const cnt = $('#boothCount'), pose = $('#boothPose');
+      for (let i = 0; i < 3; i++) {
+        pose.textContent = POSES[i]; show('#boothPose', true); show('#boothCount', true);
+        for (const n of [3, 2, 1]) {
+          cnt.textContent = n; cnt.classList.remove('tick'); void cnt.offsetWidth; cnt.classList.add('tick');
+          await wait(900);
+        }
+        show('#boothCount', false);
+        shots.push(grab(vidEl, vidEl.videoWidth, vidEl.videoHeight, true));
+        const fl = $('#boothFlash'); fl.classList.remove('go'); void fl.offsetWidth; fl.classList.add('go');
+        await wait(700);
+      }
+      show('#boothPose', false);
+      stopCam(); show('#boothPh', true); $('#boothPh p').textContent = 'เสร็จแล้ว! ดูรูปข้างๆ ได้เลย 👉';
+      busy = false;
+      await finish();
+    }
+    async function fromFiles(files) {
+      for (const f of [...files].slice(0, 3 - shots.length)) {
+        try {
+          const b = await createImageBitmap(f);
+          shots.push(grab(b, b.width, b.height, false));
+        } catch { /* skip files the browser can't read */ }
+      }
+      if (shots.length < 3) { note.textContent = `ได้ ${shots.length}/3 รูปแล้ว เลือกเพิ่มอีก ${3 - shots.length} รูปนะ`; return; }
+      await finish();
+    }
+
+    $('#boothOpen').onclick = openCam;
+    $('#boothShoot').onclick = shoot;
+    $('#boothRetake').onclick = () => { shots = []; openCam(); };
+    $('#boothFile').onchange = (e) => { if (shots.length >= 3) shots = []; fromFiles(e.target.files); e.target.value = ''; };
+    $('.booth-frames').addEventListener('click', async (e) => {
+      const b = e.target.closest('[data-frame]'); if (!b) return;
+      frame = b.dataset.frame;
+      document.querySelectorAll('.booth-frames .chip').forEach((c) => c.classList.toggle('on', c === b));
+      if (shots.length === 3) await finish();
+    });
+    new IntersectionObserver((es) => { if (!es[0].isIntersecting && !busy) stopCam(); }).observe($('#booth'));
+
+    const saved = store.get('booth', null);
+    if (saved) { $('#boothStripImg').src = saved; show('#boothRetake', true); show('#boothOpen', false); ready('booth'); }
+  }
+
+  // the 1080x1920 story image shown at the finale
+  booth.render = async (stripUrl) => {
+    const strip = new Image(); strip.src = stripUrl;
+    await strip.decode().catch(() => {});
+    await Promise.race([document.fonts.load('92px Sriracha').catch(() => {}), new Promise((r) => setTimeout(r, 1500))]);
+    const c = el('canvas'); c.width = 1080; c.height = 1920;
+    const x = c.getContext('2d');
+    const g = x.createLinearGradient(0, 0, 0, 1920);
+    g.addColorStop(0, '#cfeaff'); g.addColorStop(0.55, '#ffe0ec'); g.addColorStop(1, '#fff4f8');
+    x.fillStyle = g; x.fillRect(0, 0, 1080, 1920);
+    x.textAlign = 'center';
+    // scattered hearts and sparkles at fixed spots so every render looks the same
+    const deco = [[90, 360, '💗'], [990, 300, '✨'], [120, 1150, '🌸'], [960, 980, '💗'], [80, 1700, '✨'], [1000, 1640, '🌸'], [170, 640, '☁️'], [930, 560, '🫧']];
+    x.font = '64px sans-serif'; deco.forEach(([dx, dy, t]) => x.fillText(t, dx, dy));
+    x.fillStyle = '#f06a9b'; x.font = '96px Sriracha, cursive'; x.fillText('Happy 4th Anniversary', 540, 190);
+    x.fillStyle = '#7d6b78'; x.font = '600 44px Mali, sans-serif'; x.fillText('สี่ปีของ เธอ กับ เค้า 💗', 540, 262);
+    const h = 1340, w = h * (600 / 1560);
+    x.save(); x.translate(540, 330 + h / 2); x.rotate(-0.04);
+    x.shadowColor = 'rgba(160,110,140,.35)'; x.shadowBlur = 40; x.shadowOffsetY = 18;
+    x.drawImage(strip, -w / 2, -h / 2, w, h);
+    x.restore();
+    x.fillStyle = '#4a3b47'; x.font = '600 46px Mali, sans-serif'; x.fillText('27.11.2565 — 27.11.2569', 540, 1772);
+    x.fillStyle = '#f06a9b'; x.font = '40px Sriracha, cursive'; x.fillText('สกาย & คลาวดี้ ก็รักนะ 🐾', 540, 1840);
+    $('#boothStoryImg').src = c.toDataURL('image/jpeg', 0.92);
+    $('#boothStory').hidden = false; $('#story').hidden = true;
+    $('#storyHint').textContent = '↑ กดบันทึกรูป หรือกดค้างที่รูป แล้วลงสตอรี่ไอจีได้เลย 📲';
+    c.toBlob((b) => { booth.file = new File([b], 'us-4-years.jpg', { type: 'image/jpeg' }); }, 'image/jpeg', 0.92);
+  };
+
   /* ================= finale + fireworks ================= */
   function buildFinale() {
     $('#fireBtn').textContent = C.finale.button;
@@ -572,6 +710,15 @@
       completeAll();
       if (first) setTimeout(() => toast('ปลดล็อกครบทุกบทแล้ว! กด ☰ ข้ามไปบทไหนก็ได้ 💗'), 6000);
     };
+    $('#boothSave').onclick = () => {
+      const f = booth.file; if (!f) return;
+      // the share sheet on iPad/iPhone has "Save Image" and Instagram; elsewhere just download
+      if (navigator.canShare && navigator.canShare({ files: [f] })) { navigator.share({ files: [f] }).catch(() => {}); return; }
+      const a = el('a'); a.href = $('#boothStoryImg').src; a.download = f.name;
+      document.body.append(a); a.click(); a.remove();
+    };
+    const savedStrip = store.get('booth', null);
+    if (savedStrip) booth.render(savedStrip);
     $('#fireClose').onclick = () => { fireworks.stop(); document.body.classList.remove('night'); ft.hidden = true; };
   }
   const fireworks = (() => {

@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Mali:wght@400;500;600;700&family=Sriracha&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
-<link rel="stylesheet" href="style.css?v=mwx0pkgi">
+<link rel="stylesheet" href="style.css?v=mwx1im2t">
 </head>
 <body>
 
@@ -126,8 +126,33 @@
     </div>
   </section>
 
+  <section id="booth" class="page booth">
+    <header class="chap"><span>บทที่ 10</span><h2 class="script">โฟโต้บูธของเรา</h2></header>
+    <p class="booth-lead">ชอบโฟโต้บูธมากใช่มั้ย 😏 งั้นมาถ่ายกันตรงนี้เลย 3 ช็อต<br><small>ถ่ายเสร็จแล้วไปเอารูปลงสตอรี่ได้ตอนจบนะ</small></p>
+    <div class="booth-frames" role="radiogroup" aria-label="สีกรอบ">
+      <button class="chip on" data-frame="pink">กรอบชมพู 🌸</button><button class="chip" data-frame="sky">กรอบฟ้า ☁️</button><button class="chip" data-frame="cream">กรอบครีม 🤍</button>
+    </div>
+    <div class="booth-stage">
+      <div class="booth-cam" id="boothCam">
+        <video id="boothVid" playsinline muted autoplay></video>
+        <div class="booth-ph" id="boothPh"><span>📸</span><p>กดเปิดกล้อง แล้วยืนให้เห็นหน้ากันทั้งคู่นะ</p></div>
+        <div class="booth-count" id="boothCount" hidden></div>
+        <div class="booth-pose" id="boothPose" hidden></div>
+        <div class="booth-flash" id="boothFlash"></div>
+      </div>
+      <div class="booth-strip" id="boothStrip"><img id="boothStripImg" alt="รูปโฟโต้บูธของเรา"></div>
+    </div>
+    <div class="booth-btns">
+      <button class="btn btn-pink" id="boothOpen">เปิดกล้อง 📷</button>
+      <button class="btn btn-big" id="boothShoot" hidden>เริ่มถ่าย 3 ช็อต! 📸</button>
+      <button class="btn btn-sky" id="boothRetake" hidden>ถ่ายใหม่ 🔁</button>
+      <label class="btn btn-sky booth-file" id="boothFileBtn" hidden>เลือกรูปจากเครื่องแทน 🖼️<input type="file" id="boothFile" accept="image/*" multiple hidden></label>
+    </div>
+    <p class="booth-note" id="boothNote"></p>
+  </section>
+
   <section id="finale" class="page finale">
-    <header class="chap"><span>บทที่ 10</span><h2 class="script">ตอนจบ (ที่ไม่ใช่ตอนจบ)</h2></header>
+    <header class="chap"><span>บทที่ 11</span><h2 class="script">ตอนจบ (ที่ไม่ใช่ตอนจบ)</h2></header>
     <p class="finale-lead" data-k="finale.lead"></p>
     <button class="btn btn-big" id="fireBtn"></button>
     <div class="story" id="story">
@@ -138,7 +163,11 @@
         <span><svg viewBox="0 0 120 100"><use href="#cat-fluffy"/></svg><small>สกาย</small></span><span><svg viewBox="0 0 120 100"><use href="#cat-fold"/></svg><small>คลาวดี้</small></span>
       </p>
     </div>
-    <p class="story-hint">↑ แคปหน้าจอการ์ดนี้ ลงสตอรี่ได้เลย</p>
+    <div class="booth-story" id="boothStory" hidden>
+      <img id="boothStoryImg" alt="รูปสตอรี่ 4 ปีของเรา">
+      <button class="btn btn-pink" id="boothSave">บันทึกรูป / แชร์ลงไอจี 💾</button>
+    </div>
+    <p class="story-hint" id="storyHint">↑ แคปหน้าจอการ์ดนี้ ลงสตอรี่ได้เลย</p>
   </section>
 
   <footer class="foot">ทำด้วยความรักจาก เค้า · 2569</footer>
@@ -153,7 +182,7 @@
   <a href="#hero">🏠 หน้าแรก</a><a href="#quiz">🕵️ ด่านพิสูจน์ตัวตน</a><a href="#timeline">📖 เรื่องของเรา</a>
   <a href="#map">🗺️ แผนที่</a><a href="#gallery">📸 สมุดภาพ</a><a href="#reasons">💗 เหตุผลที่รัก</a>
   <a href="#coupons">🎟️ คูปอง</a><a href="#bucket">✅ สิ่งที่อยากทำ</a><a href="#letter">💌 จดหมาย</a>
-  <a href="#videos">🎬 วิดีโอ</a><a href="#finale">🎆 ตอนจบ</a>
+  <a href="#videos">🎬 วิดีโอ</a><a href="#booth">📸 โฟโต้บูธ</a><a href="#finale">🎆 ตอนจบ</a>
 </nav>
 <div class="music" id="music" aria-hidden="true">
   <div class="music-head"><span>เพลงของเรา 🎶</span><button id="musicClose" aria-label="ปิด">✕</button></div>
@@ -205,6 +234,6 @@
 </svg>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="app.js?v=mwx0pkgi"></script>
+<script src="app.js?v=mwx1im2t"></script>
 </body>
 </html>
