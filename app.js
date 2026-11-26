@@ -287,15 +287,8 @@
     const init = () => {
       if (map || !window.L) return;
       map = L.map('leaflet', { scrollWheelZoom: false, tap: true });
-      // pastel CARTO tiles; fall back to plain OpenStreetMap if CARTO fails to load
-      const attribution = '&copy; OpenStreetMap &copy; CARTO';
-      const carto = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { maxZoom: 18, subdomains: 'abcd', attribution }).addTo(map);
-      let errs = 0;
-      carto.on('tileerror', () => {
-        if (++errs !== 4) return;
-        map.removeLayer(carto);
-        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18, attribution: '&copy; OpenStreetMap' }).addTo(map);
-      });
+      // CARTO now serves an "API key required" tile, so use OpenStreetMap (no key needed)
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18, attribution: '&copy; OpenStreetMap' }).addTo(map);
       C.places.forEach((p, i) => {
         const icon = L.divIcon({ className: 'pin', html: '📍', iconSize: [30, 30], iconAnchor: [15, 28], popupAnchor: [0, -26] });
         const box = el('div');
