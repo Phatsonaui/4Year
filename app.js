@@ -168,7 +168,7 @@
   }
   function reveal(i) {
     const s = $('#' + CHAPS[i]); s.hidden = false;
-    if (CHAPS[i] === 'letter') music.prepare();
+    if (CHAPS[i] === 'letter') music().prepare();
   }
   function goNext(i) {
     if (i + 1 > prog) { prog = i + 1; store.set('prog', prog); }
@@ -187,7 +187,7 @@
     prog = Math.min(store.get('prog', 0), CHAPS.length - 1); allDone = store.get('done', false);
     CHAPS.forEach((id, i) => {
       const s = $('#' + id);
-      if (i > prog && !allDone) s.hidden = true; else if (id === 'letter') music.prepare();
+      if (i > prog && !allDone) s.hidden = true; else if (id === 'letter') music().prepare();
       if (id === 'finale') return;
       const w = el('div', 'next');
       w.innerHTML = `<button class="btn btn-big next-btn">${i === 0 ? 'เริ่มบทที่ 1 →' : `ไปบทที่ ${i + 1} →`}</button><p class="next-note" role="status"></p>`;
@@ -480,7 +480,7 @@
       if (env.classList.contains('open')) return;
       env.classList.add('open');
       heartBurst(env);
-      music.play();
+      music().play();
       setTimeout(() => {
         if (L.photo) $('#letterPhoto').hidden = false;
         body.hidden = false;
@@ -502,7 +502,7 @@
     let inView = false, raf = 0, seenMs = 0, lastT = 0, loaded = false;
 
     const openFull = (n) => {
-      film.pauseAll(); music.pause();
+      film.pauseAll(); music().pause();
       const mv = $('#vmVid');
       $('#vm').hidden = false; document.body.style.overflow = 'hidden';
       mv.removeAttribute('src'); mv.load();
@@ -511,7 +511,7 @@
     $('#vmX').onclick = () => {
       const mv = $('#vmVid'); mv.pause();
       $('#vm').hidden = true; document.body.style.overflow = '';
-      music.resume(); if (inView) playAll();
+      music().resume(); if (inView) playAll();
     };
 
     groups.forEach((g, r) => {
@@ -615,8 +615,39 @@
     };
   })();
 
-  /* ================= music (Spotify embed) ================= */
-  const music = (() => {
+  /* ================= music ================= */
+  // our own encrypted song file (full length, works without any login); Spotify embed is only a fallback
+  const music = () => (C.media.song ? songPlayer : spotify);
+  const songPlayer = (() => {
+    const audio = new Audio(); audio.loop = true; audio.preload = 'auto';
+    let ready = null, resumeLater = false;
+    const panel = () => $('#music');
+    const open = (on) => { panel().classList.toggle('open', on); panel().setAttribute('aria-hidden', !on); };
+    const setBtn = () => $('#musicBtn').classList.toggle('playing', !audio.paused);
+    audio.addEventListener('play', setBtn); audio.addEventListener('pause', setBtn);
+    function prepare() {
+      if (ready) return ready;
+      const box = $('#musicFrame');
+      box.innerHTML = '';
+      const info = el('div', 'song-info');
+      info.innerHTML = `<b>${C.song?.title || 'เพลงของเรา'}</b><span>${C.song?.artist || ''}</span>`;
+      audio.controls = true; audio.className = 'song-audio';
+      box.append(info, audio);
+      ready = media('song', 'audio/mpeg').then((url) => { audio.src = url; });
+      ready.catch(() => { ready = null; });
+      return ready;
+    }
+    function play() {
+      const go = () => audio.play().catch(() => { open(true); toast('แตะ ▶ ในกล่องเพลงเพื่อเปิดเพลงของเรานะ 🎶'); });
+      // call play() right inside the tap when the file is already decrypted, so iPad allows it
+      if (audio.src) go(); else prepare().then(go);
+    }
+    const pause = () => { resumeLater = !audio.paused; audio.pause(); };
+    const resume = () => { if (resumeLater) audio.play().catch(() => {}); resumeLater = false; };
+    return { prepare, play, pause, resume, toggle: () => open(!panel().classList.contains('open')) };
+  })();
+
+  const spotify = (() => {
     let ctrl = null, loading = false, playing = false, wantPlay = false, fallback = false;
     const panel = () => $('#music');
     const trackUri = () => { const m = /track\/([A-Za-z0-9]+)/.exec(C.spotify); return m ? 'spotify:track:' + m[1] : null; };
@@ -674,7 +705,7 @@
       menu.hidden = true;
     });
     document.addEventListener('click', (e) => { if (!menu.hidden && !menu.contains(e.target) && e.target.id !== 'menuBtn') menu.hidden = true; });
-    $('#musicBtn').onclick = () => { music.prepare(); music.toggle(); };
+    $('#musicBtn').onclick = () => { music().prepare(); music().toggle(); };
     $('#musicClose').onclick = () => { musicBox.classList.remove('open'); musicBox.setAttribute('aria-hidden', 'true'); };
   }
 })();

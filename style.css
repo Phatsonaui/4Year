@@ -376,3 +376,6 @@ body.night::after { content: ''; position: fixed; inset: 0; background: radial-g
 .ps .ps-in { display: none; font-weight: 600; }
 .ps.open .ps-in { display: block; animation: rise .6s; }
 .ps.open .ps-out { display: none; }
+.song-info { display: flex; flex-direction: column; padding: 2px 6px 8px; }
+.song-info span { font-size: .85em; opacity: .7; }
+.song-audio { width: 100%; display: block; }
