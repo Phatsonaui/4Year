@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#ffe6f0">
+<title>For you 💗</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💗</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Mali:wght@400;500;600;700&family=Sriracha&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="sky" aria-hidden="true">
+  <span class="cloud c1"></span><span class="cloud c2"></span><span class="cloud c3"></span>
+</div>
+
+<!-- ============ LOCK ============ -->
+<section id="lock">
+  <div class="lock-card">
+    <div class="cats" aria-hidden="true">
+      <figure class="cat cat-a"><svg viewBox="0 0 120 100"><use href="#cat-fluffy"/></svg><figcaption>สกาย</figcaption></figure>
+      <figure class="cat cat-b"><svg viewBox="0 0 120 100"><use href="#cat-fold"/></svg><figcaption>คลาวดี้</figcaption></figure>
+    </div>
+    <p class="lock-kicker">พื้นที่ส่วนตัว 🔒</p>
+    <h1 class="lock-title">เว็บนี้เปิดได้เฉพาะ<br><span class="hl">แฟนของเค้า</span>เท่านั้น</h1>
+    <p class="lock-sub">ถ้าไม่ใช่... ปิดไปเถอะ มีแมวสองตัวเฝ้าอยู่ 😾</p>
+    <form id="lockForm" autocomplete="off">
+      <label for="pw" class="lock-label">รหัสผ่าน = วันที่เราเป็นแฟนกัน</label>
+      <input id="pw" inputmode="numeric" placeholder="วว ดด ปปปป" maxlength="12" aria-describedby="lockMsg">
+      <button type="submit" class="btn btn-pink" id="unlockBtn">เปิดเลย 💗</button>
+      <p id="lockMsg" class="lock-msg" role="status"></p>
+    </form>
+  </div>
+</section>
+
+<!-- ============ APP ============ -->
+<main id="app" hidden>
+
+  <section id="hero" class="page hero">
+    <p class="kicker" data-k="hero.kicker"></p>
+    <h1 class="script hero-title" data-k="hero.title"></h1>
+    <p class="hero-sub" data-k="hero.sub"></p>
+    <div class="hero-photos" id="heroPhotos"></div>
+    <div class="counter-wrap">
+      <p class="counter-label">เราคบกันมาแล้ว</p>
+      <div class="counter" id="counter"></div>
+      <p class="counter-total" id="counterTotal"></p>
+    </div>
+    <div class="facts" id="facts"></div>
+  </section>
+
+  <section id="quiz" class="page">
+    <header class="chap"><span>บทที่ 1</span><h2 class="script">ด่านพิสูจน์ตัวตน</h2></header>
+    <p class="lead" data-k="quiz.intro"></p>
+    <div class="quiz-card" id="quizCard"></div>
+  </section>
+
+  <section id="timeline" class="page">
+    <header class="chap"><span>บทที่ 2</span><h2 class="script">จากหัวทอง... สู่วันนี้</h2></header>
+    <ol class="tl" id="tl"></ol>
+  </section>
+
+  <section id="map" class="page">
+    <header class="chap"><span>บทที่ 3</span><h2 class="script">ที่ที่เราไปด้วยกัน</h2></header>
+    <div class="map-wrap">
+      <div id="leaflet" class="leaflet-box" role="region" aria-label="แผนที่สถานที่"></div>
+      <ul class="place-list" id="placeList"></ul>
+    </div>
+  </section>
+
+  <section id="gallery" class="page">
+    <header class="chap"><span>บทที่ 4</span><h2 class="script">สมุดภาพของเรา</h2></header>
+    <div class="chips" id="chips" role="tablist"></div>
+    <div class="grid" id="grid"></div>
+    <div id="gridEnd" aria-hidden="true" style="height:1px"></div>
+  </section>
+
+  <section id="reasons" class="page">
+    <header class="chap"><span>บทที่ 5</span><h2 class="script">เหตุผลที่รักเธอ</h2></header>
+    <p class="lead">พลิกให้ครบทุกใบนะ แตะการ์ดเพื่อพลิก หรือ <button class="btn btn-sky btn-sm" id="randReason">สุ่มให้หน่อย 🎲</button></p>
+    <div class="cards" id="cards"></div>
+  </section>
+
+  <section id="coupons" class="page">
+    <header class="chap"><span>บทที่ 6</span><h2 class="script">คูปองของขวัญ</h2></header>
+    <p class="lead">แตะคูปองเพื่อใช้ แล้วแคปหน้าจอส่งให้เค้า (ไม่มีวันหมดอายุ ✨)</p>
+    <div class="coupons" id="couponList"></div>
+  </section>
+
+  <section id="bucket" class="page">
+    <header class="chap"><span>บทที่ 7</span><h2 class="script">สิ่งที่อยากทำด้วยกัน</h2></header>
+    <p class="lead">ทำแล้วมาติ๊กกันนะ ✔︎</p>
+    <ul class="bucket" id="bucketList"></ul>
+  </section>
+
+  <section id="letter" class="page">
+    <header class="chap"><span>บทที่ 8</span><h2 class="script">จดหมายจากเค้า</h2></header>
+    <div class="envelope" id="envelope" role="button" tabindex="0" aria-label="เปิดจดหมาย">
+      <div class="env-back"></div>
+      <div class="env-paper"><span class="script">💌</span></div>
+      <div class="env-front"></div>
+      <div class="env-flap"></div>
+      <div class="env-seal">💗</div>
+      <svg viewBox="0 0 120 100" class="peek peek-l" aria-hidden="true"><use href="#cat-fluffy"/></svg>
+      <svg viewBox="0 0 120 100" class="peek peek-r" aria-hidden="true"><use href="#cat-fold"/></svg>
+      <p class="env-hint">แตะเพื่อเปิด</p>
+    </div>
+    <div class="letter-photo" id="letterPhoto" hidden></div>
+    <article class="letter" id="letterBody" hidden></article>
+  </section>
+
+  <section id="videos" class="page">
+    <header class="chap"><span>บทที่ 9</span><h2 class="script">4 ปีในวิดีโอ</h2></header>
+    <div class="film" id="film">
+      <div class="film-row"><div class="film-track" id="filmTop"></div></div>
+      <div class="film-mid">
+        <p class="script film-title">4 ปีของเรา</p>
+        <p class="film-sub">แตะคลิปไหนก็ได้ เพื่อดูเต็มจอแบบมีเสียง 🔊</p>
+      </div>
+      <div class="film-row"><div class="film-track rev" id="filmBottom"></div></div>
+    </div>
+  </section>
+
+  <section id="finale" class="page finale">
+    <header class="chap"><span>บทที่ 10</span><h2 class="script">ตอนจบ (ที่ไม่ใช่ตอนจบ)</h2></header>
+    <p class="finale-lead" data-k="finale.lead"></p>
+    <button class="btn btn-big" id="fireBtn"></button>
+    <div class="story" id="story">
+      <div class="story-photo" id="storyPhoto"></div>
+      <p class="script story-title">4 years of us</p>
+      <p class="story-date">27.11.2565 — 27.11.2569</p>
+      <p class="story-cats" aria-hidden="true">
+        <span><svg viewBox="0 0 120 100"><use href="#cat-fluffy"/></svg><small>สกาย</small></span><span><svg viewBox="0 0 120 100"><use href="#cat-fold"/></svg><small>คลาวดี้</small></span>
+      </p>
+    </div>
+    <p class="story-hint">↑ แคปหน้าจอการ์ดนี้ ลงสตอรี่ได้เลย</p>
+  </section>
+
+  <footer class="foot">ทำด้วยความรักจาก เค้า · 2569</footer>
+</main>
+
+<!-- floating controls -->
+<div class="fab" id="fab" hidden>
+  <button class="fab-btn" id="menuBtn" aria-label="สารบัญ">☰</button>
+  <button class="fab-btn" id="musicBtn" aria-label="เพลงของเรา">🎵</button>
+</div>
+<nav class="menu" id="menu" hidden>
+  <a href="#hero">🏠 หน้าแรก</a><a href="#quiz">🕵️ ด่านพิสูจน์ตัวตน</a><a href="#timeline">📖 เรื่องของเรา</a>
+  <a href="#map">🗺️ แผนที่</a><a href="#gallery">📸 สมุดภาพ</a><a href="#reasons">💗 เหตุผลที่รัก</a>
+  <a href="#coupons">🎟️ คูปอง</a><a href="#bucket">✅ สิ่งที่อยากทำ</a><a href="#letter">💌 จดหมาย</a>
+  <a href="#videos">🎬 วิดีโอ</a><a href="#finale">🎆 ตอนจบ</a>
+</nav>
+<div class="music" id="music" aria-hidden="true">
+  <div class="music-head"><span>เพลงของเรา 🎶</span><button id="musicClose" aria-label="ปิด">✕</button></div>
+  <div id="musicFrame"></div>
+</div>
+
+<div class="lightbox vmodal" id="vm" hidden>
+  <button class="lb-x" id="vmX" aria-label="ปิด">✕</button>
+  <video id="vmVid" playsinline controls></video>
+</div>
+
+<div class="lightbox" id="lb" hidden>
+  <button class="lb-x" id="lbX" aria-label="ปิด">✕</button>
+  <button class="lb-nav lb-prev" id="lbPrev" aria-label="ก่อนหน้า">‹</button>
+  <img id="lbImg" alt="">
+  <button class="lb-nav lb-next" id="lbNext" aria-label="ถัดไป">›</button>
+  <p class="lb-count" id="lbCount"></p>
+</div>
+
+<div class="toast" id="toast" role="status"></div>
+<canvas id="fx" aria-hidden="true"></canvas>
+<div class="fire-text" id="fireText" hidden><p class="script big"></p><p class="small"></p><button class="btn btn-pink btn-sm" id="fireClose">กลับไปหน้าเว็บ</button></div>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="cat-fluffy" viewBox="0 0 120 100">
+      <path d="M22 40 L18 8 L44 26 Z" fill="#fff" stroke="#c9b7c4" stroke-width="2.5" stroke-linejoin="round"/>
+      <path d="M98 40 L102 8 L76 26 Z" fill="#fff" stroke="#c9b7c4" stroke-width="2.5" stroke-linejoin="round"/>
+      <path d="M24 20 L30 32 M96 20 L90 32" stroke="#ffc2d6" stroke-width="5" stroke-linecap="round"/>
+      <path d="M60 22 C30 22 12 40 14 62 C10 70 16 74 20 76 C26 90 44 96 60 96 C76 96 94 90 100 76 C104 74 110 70 106 62 C108 40 90 22 60 22 Z" fill="#fff" stroke="#c9b7c4" stroke-width="2.5"/>
+      <circle cx="44" cy="58" r="6" fill="#4a3b47"/><circle cx="76" cy="58" r="6" fill="#4a3b47"/>
+      <circle cx="46" cy="56" r="2" fill="#fff"/><circle cx="78" cy="56" r="2" fill="#fff"/>
+      <ellipse cx="34" cy="72" rx="7" ry="4" fill="#ffc2d6"/><ellipse cx="86" cy="72" rx="7" ry="4" fill="#ffc2d6"/>
+      <path d="M56 68 L64 68 L60 73 Z" fill="#ff9ec4"/>
+      <path d="M60 73 Q55 79 50 76 M60 73 Q65 79 70 76" stroke="#4a3b47" stroke-width="2" fill="none" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="cat-fold" viewBox="0 0 120 100">
+      <path d="M60 22 C32 22 14 40 14 62 C14 84 36 96 60 96 C84 96 106 84 106 62 C106 40 88 22 60 22 Z" fill="#fff" stroke="#c9b7c4" stroke-width="2.5"/>
+      <path d="M60 23 C40 23 26 32 20 46 C30 46 44 40 52 30 C56 40 64 40 68 30 C76 40 90 46 100 46 C94 32 80 23 60 23 Z" fill="#c98b5a"/>
+      <path d="M22 34 Q24 18 40 24 Q34 30 22 34 Z" fill="#a86f45" stroke="#8b5a36" stroke-width="2" stroke-linejoin="round"/>
+      <path d="M98 34 Q96 18 80 24 Q86 30 98 34 Z" fill="#a86f45" stroke="#8b5a36" stroke-width="2" stroke-linejoin="round"/>
+      <circle cx="44" cy="60" r="7" fill="#4a3b47"/><circle cx="76" cy="60" r="7" fill="#4a3b47"/>
+      <circle cx="46" cy="58" r="2.4" fill="#fff"/><circle cx="78" cy="58" r="2.4" fill="#fff"/>
+      <ellipse cx="33" cy="74" rx="7" ry="4" fill="#ffc2d6"/><ellipse cx="87" cy="74" rx="7" ry="4" fill="#ffc2d6"/>
+      <path d="M56 70 L64 70 L60 75 Z" fill="#ff9ec4"/>
+      <path d="M60 75 Q55 81 50 78 M60 75 Q65 81 70 78" stroke="#4a3b47" stroke-width="2" fill="none" stroke-linecap="round"/>
+    </symbol>
+  </defs>
+</svg>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
